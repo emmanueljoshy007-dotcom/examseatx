@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: examseatx
+    runtime: docker
+    dockerfilePath: ./examSeatX-backend/Dockerfile
+    dockerContext: ./examSeatX-backend
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080

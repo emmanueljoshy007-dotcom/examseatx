@@ -1,0 +1,19 @@
+# Build outputs & dependencies
+node_modules/
+**/node_modules/
+target/
+**/target/
+dist/
+*.log
+
+# Portable binaries
+git/
+cloudflared.exe
+*.zip
+
+# IDE and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
