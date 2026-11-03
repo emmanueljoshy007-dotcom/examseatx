@@ -26,3 +26,4 @@ public class SpaForwardController {
         return "forward:/index.html";
     }
 }
+
