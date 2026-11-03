@@ -24,8 +24,8 @@ function ClassroomsPage() {
     roomNumber: '',
     building: '',
     floor: 0,
-    rows: '',
-    columns: '',
+    benches: '',
+    benchColumns: 2,
     notes: '',
   })
 
@@ -48,19 +48,31 @@ function ClassroomsPage() {
 
   const handleAdd = async (e) => {
     e.preventDefault()
-    const rows = parseInt(formData.rows)
-    const columns = parseInt(formData.columns)
+    const benches = parseInt(formData.benches) || 0
+    if (benches <= 0) {
+      toast.error('Please enter a valid number of benches (at least 1)')
+      return
+    }
+    const benchCols = parseInt(formData.benchColumns) || 2
+    // Each bench seats 2 students side-by-side
+    const columns = benchCols * 2
+    const rows = Math.max(Math.ceil((benches * 2) / columns), 1)
+    const capacity = benches * 2
+
     try {
       await classroomsApi.create({
-        ...formData,
-        floor: parseInt(formData.floor),
+        roomNumber: formData.roomNumber,
+        building: formData.building,
+        floor: parseInt(formData.floor) || 0,
+        benches,
         rows,
         columns,
-        capacity: rows * columns,
+        capacity,
+        notes: formData.notes,
       })
-      toast.success(`Classroom ${formData.roomNumber} added!`)
+      toast.success(`Classroom ${formData.roomNumber} added with ${benches} benches (${capacity} seats)!`)
       setShowForm(false)
-      setFormData({ roomNumber: '', building: '', floor: 0, rows: '', columns: '', notes: '' })
+      setFormData({ roomNumber: '', building: '', floor: 0, benches: '', benchColumns: 2, notes: '' })
       fetchClassrooms()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to add classroom')
@@ -152,34 +164,35 @@ function ClassroomsPage() {
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-sm mb-1">Rows *</label>
+              <label className="block text-slate-400 text-sm mb-1">Number of Benches *</label>
               <input
                 type="number"
                 required
                 min="1"
-                placeholder="e.g., 10"
+                placeholder="e.g., 20"
                 className="input-field"
-                value={formData.rows}
-                onChange={e => setFormData(p => ({ ...p, rows: e.target.value }))}
+                value={formData.benches}
+                onChange={e => setFormData(p => ({ ...p, benches: e.target.value }))}
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-sm mb-1">Columns *</label>
-              <input
-                type="number"
-                required
-                min="1"
-                placeholder="e.g., 8"
+              <label className="block text-slate-400 text-sm mb-1">Bench Columns (Aisles)</label>
+              <select
                 className="input-field"
-                value={formData.columns}
-                onChange={e => setFormData(p => ({ ...p, columns: e.target.value }))}
-              />
+                value={formData.benchColumns}
+                onChange={e => setFormData(p => ({ ...p, benchColumns: e.target.value }))}
+              >
+                <option value={2}>2 Bench Rows (Standard 4 Seats Wide)</option>
+                <option value={3}>3 Bench Rows (Standard 6 Seats Wide)</option>
+                <option value={1}>1 Bench Row (Single Column)</option>
+                <option value={4}>4 Bench Rows (Large Hall)</option>
+              </select>
             </div>
             <div>
-              <label className="block text-slate-400 text-sm mb-1">Capacity (preview)</label>
-              <div className="input-field bg-slate-800 cursor-default">
-                {formData.rows && formData.columns
-                  ? `${parseInt(formData.rows) * parseInt(formData.columns)} seats`
+              <label className="block text-slate-400 text-sm mb-1">Capacity Preview</label>
+              <div className="input-field bg-slate-800 text-primary-400 font-semibold cursor-default">
+                {formData.benches
+                  ? `${parseInt(formData.benches) * 2} seats (2 per bench)`
                   : '—'}
               </div>
             </div>
@@ -239,7 +252,7 @@ function ClassroomsPage() {
               <div className="flex items-center gap-2 bg-slate-700/50 rounded-lg px-3 py-2 mb-3">
                 <Grid size={16} className="text-primary-400" />
                 <span className="text-slate-300 text-sm font-mono">
-                  {room.rows} rows x {room.columns} cols = {room.capacity} seats
+                  {room.benches || Math.ceil(room.capacity / 2)} Benches • {room.capacity} Seats (2 per bench)
                 </span>
               </div>
 

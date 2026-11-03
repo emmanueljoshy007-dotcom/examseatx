@@ -32,6 +32,8 @@ public class Classroom {
     @Column(nullable = false)
     private Integer capacity;
 
+    private Integer benches;
+
     private boolean available = true;
 
     private String notes;
@@ -69,6 +71,7 @@ public class Classroom {
         private Integer rows;
         private Integer columns;
         private Integer capacity;
+        private Integer benches;
         private boolean available = true;
         private String notes;
         private LocalDateTime createdAt;
@@ -81,16 +84,30 @@ public class Classroom {
         public ClassroomBuilder rows(Integer rows) { this.rows = rows; return this; }
         public ClassroomBuilder columns(Integer columns) { this.columns = columns; return this; }
         public ClassroomBuilder capacity(Integer capacity) { this.capacity = capacity; return this; }
+        public ClassroomBuilder benches(Integer benches) { this.benches = benches; return this; }
         public ClassroomBuilder available(boolean available) { this.available = available; return this; }
         public ClassroomBuilder notes(String notes) { this.notes = notes; return this; }
         public ClassroomBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
         public ClassroomBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
         public Classroom build() {
-            if (capacity == null && rows != null && columns != null) {
+            if (benches != null && benches > 0) {
+                if (capacity == null || capacity <= 0) {
+                    capacity = benches * 2;
+                }
+                if (columns == null || columns <= 0) {
+                    columns = 4;
+                }
+                if (rows == null || rows <= 0) {
+                    rows = Math.max((int) Math.ceil((double) capacity / columns), 1);
+                }
+            } else if (capacity == null && rows != null && columns != null) {
                 capacity = rows * columns;
+                benches = capacity / 2;
             }
-            return new Classroom(id, roomNumber, building, floor, rows, columns, capacity, available, notes, createdAt, updatedAt);
+            Classroom c = new Classroom(id, roomNumber, building, floor, rows, columns, capacity, available, notes, createdAt, updatedAt);
+            c.setBenches(benches);
+            return c;
         }
     }
 
@@ -128,6 +145,13 @@ public class Classroom {
 
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
+
+    public Integer getBenches() {
+        if (benches != null && benches > 0) return benches;
+        if (capacity != null && capacity > 0) return (capacity + 1) / 2;
+        return 0;
+    }
+    public void setBenches(Integer benches) { this.benches = benches; }
 
     public boolean isAvailable() { return available; }
     public void setAvailable(boolean available) { this.available = available; }

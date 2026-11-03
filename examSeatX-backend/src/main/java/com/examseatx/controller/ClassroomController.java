@@ -38,8 +38,20 @@ public class ClassroomController {
 
     @PostMapping
     public Classroom create(@RequestBody Classroom classroom) {
-        if (classroom.getCapacity() == null && classroom.getRows() != null && classroom.getColumns() != null) {
+        if (classroom.getBenches() != null && classroom.getBenches() > 0) {
+            classroom.setCapacity(classroom.getBenches() * 2);
+            if (classroom.getColumns() == null || classroom.getColumns() <= 0) {
+                classroom.setColumns(4); // 2 bench columns x 2 seats
+            }
+            if (classroom.getRows() == null || classroom.getRows() <= 0) {
+                int r = (int) Math.ceil((double) classroom.getCapacity() / classroom.getColumns());
+                classroom.setRows(Math.max(r, 1));
+            }
+        } else if (classroom.getCapacity() == null && classroom.getRows() != null && classroom.getColumns() != null) {
             classroom.setCapacity(classroom.getRows() * classroom.getColumns());
+            classroom.setBenches(classroom.getCapacity() / 2);
+        } else if (classroom.getCapacity() != null && classroom.getBenches() == null) {
+            classroom.setBenches(classroom.getCapacity() / 2);
         }
         return classroomRepository.save(classroom);
     }
@@ -50,9 +62,18 @@ public class ClassroomController {
             existing.setRoomNumber(updated.getRoomNumber());
             existing.setBuilding(updated.getBuilding());
             existing.setFloor(updated.getFloor());
-            existing.setRows(updated.getRows());
-            existing.setColumns(updated.getColumns());
-            existing.setCapacity(updated.getCapacity() != null ? updated.getCapacity() : updated.getRows() * updated.getColumns());
+            existing.setBenches(updated.getBenches());
+            if (updated.getBenches() != null && updated.getBenches() > 0) {
+                existing.setCapacity(updated.getBenches() * 2);
+                int cols = (updated.getColumns() != null && updated.getColumns() > 0) ? updated.getColumns() : 4;
+                existing.setColumns(cols);
+                int r = (int) Math.ceil((double) existing.getCapacity() / cols);
+                existing.setRows(Math.max(r, 1));
+            } else {
+                existing.setRows(updated.getRows());
+                existing.setColumns(updated.getColumns());
+                existing.setCapacity(updated.getCapacity() != null ? updated.getCapacity() : (updated.getRows() != null && updated.getColumns() != null ? updated.getRows() * updated.getColumns() : 0));
+            }
             existing.setAvailable(updated.isAvailable());
             existing.setNotes(updated.getNotes());
             return ResponseEntity.ok(classroomRepository.save(existing));
