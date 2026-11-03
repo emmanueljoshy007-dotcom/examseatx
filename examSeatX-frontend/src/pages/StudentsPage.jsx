@@ -92,7 +92,7 @@ function StudentsPage() {
       setCsvFile(null)
       fetchStudents()
     } catch (err) {
-      toast.error(err.response?.data?.message || 'CSV upload failed. Please check the file format.')
+      toast.error(err.response?.data?.message || 'File upload failed. Please check the file format.')
     } finally {
       setUploading(false)
     }
@@ -151,13 +151,13 @@ function StudentsPage() {
             Sample CSV Template
           </button>
 
-          {/* CSV Upload */}
+          {/* CSV / Excel Upload */}
           <label className="btn-secondary cursor-pointer flex items-center gap-2 text-xs">
             <Upload size={15} />
-            {csvFile ? `Selected: ${csvFile.name}` : 'Upload CSV'}
+            {csvFile ? `Selected: ${csvFile.name}` : 'Upload Excel / CSV'}
             <input
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xls,application/vnd.ms-excel"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {

@@ -2,6 +2,7 @@ package com.examseatx.controller;
 
 import com.examseatx.model.Student;
 import com.examseatx.repository.StudentRepository;
+import org.apache.poi.ss.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -78,8 +79,8 @@ public class StudentController {
     }
 
     /**
-     * Resilient CSV Student Bulk Upload.
-     * Supports formats with 2 to 8 columns:
+     * Resilient Student Bulk Upload.
+     * Supports both Excel (.xlsx, .xls) and CSV (.csv) formats with 2 to 8 columns:
      * - rollNumber, name
      * - rollNumber, firstName, lastName
      * - rollNumber, firstName, lastName, email, department, semester, academicYear, program
@@ -89,40 +90,66 @@ public class StudentController {
         if (file == null || file.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "The uploaded CSV file is empty. Please select a valid .csv file."
+                    "message", "The uploaded file is empty. Please select a valid Excel (.xlsx/.xls) or .csv file."
             ));
         }
 
         List<Student> studentsToSave = new ArrayList<>();
         int skippedDuplicates = 0;
-        int lineNumber = 0;
+        String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
+        List<String[]> dataRows = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-
-            String rawLine;
-            while ((rawLine = reader.readLine()) != null) {
-                lineNumber++;
-                String line = rawLine.trim();
-                // Strip UTF-8 BOM if present on first line
-                if (lineNumber == 1 && line.startsWith("\uFEFF")) {
-                    line = line.substring(1).trim();
+        try {
+            if (originalFilename.endsWith(".xlsx") || originalFilename.endsWith(".xls")) {
+                // Parse Excel spreadsheet
+                try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
+                    Sheet sheet = workbook.getSheetAt(0);
+                    DataFormatter formatter = new DataFormatter();
+                    for (Row row : sheet) {
+                        if (row == null) continue;
+                        int lastCol = Math.max(row.getLastCellNum(), 8);
+                        String[] tokens = new String[lastCol];
+                        boolean hasData = false;
+                        for (int cn = 0; cn < lastCol; cn++) {
+                            Cell cell = row.getCell(cn, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                            tokens[cn] = cell != null ? formatter.formatCellValue(cell).trim() : "";
+                            if (!tokens[cn].isEmpty()) hasData = true;
+                        }
+                        if (hasData) {
+                            dataRows.add(tokens);
+                        }
+                    }
                 }
+            } else {
+                // Parse CSV / TXT
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+                    String rawLine;
+                    int lineNumber = 0;
+                    while ((rawLine = reader.readLine()) != null) {
+                        lineNumber++;
+                        String line = rawLine.trim();
+                        if (lineNumber == 1 && line.startsWith("\uFEFF")) {
+                            line = line.substring(1).trim();
+                        }
+                        if (line.isEmpty() || line.startsWith("#")) continue;
 
-                if (line.isEmpty() || line.startsWith("#")) continue;
-
-                // Split by comma, tab, or semicolon
-                String delimiter = line.contains(",") ? "," : (line.contains(";") ? ";" : "\t");
-                String[] tokens = line.split(delimiter, -1);
-
-                for (int i = 0; i < tokens.length; i++) {
-                    tokens[i] = tokens[i].trim().replace("\"", "");
+                        String delimiter = line.contains(",") ? "," : (line.contains(";") ? ";" : "\t");
+                        String[] tokens = line.split(delimiter, -1);
+                        for (int i = 0; i < tokens.length; i++) {
+                            tokens[i] = tokens[i].trim().replace("\"", "");
+                        }
+                        dataRows.add(tokens);
+                    }
                 }
+            }
 
+            for (String[] tokens : dataRows) {
+                if (tokens.length == 0) continue;
                 String roll = tokens[0].trim();
                 if (roll.isEmpty()) continue;
 
-                // Skip header line if detected
+                // Skip header row if detected
                 String lowerRoll = roll.toLowerCase();
                 if (lowerRoll.contains("roll") || lowerRoll.contains("id") || lowerRoll.equals("rollnumber") || lowerRoll.equals("student_id")) {
                     continue;
@@ -149,7 +176,6 @@ public class StudentController {
                 }
 
                 if (tokens.length >= 3 && !tokens[2].isBlank()) {
-                    // If token 2 looks like email, or if it's last name or department
                     if (tokens[2].contains("@")) {
                         email = tokens[2];
                     } else if (lastName.isEmpty()) {
@@ -207,7 +233,7 @@ public class StudentController {
                 studentRepository.saveAll(studentsToSave);
             }
 
-            log.info("Uploaded CSV processed: {} saved, {} skipped duplicates.", studentsToSave.size(), skippedDuplicates);
+            log.info("Uploaded roster processed: {} saved, {} skipped duplicates.", studentsToSave.size(), skippedDuplicates);
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
@@ -218,10 +244,10 @@ public class StudentController {
             ));
 
         } catch (Exception e) {
-            log.error("CSV upload processing failed", e);
+            log.error("Student roster upload processing failed", e);
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "Failed to parse CSV file: " + e.getMessage()
+                    "message", "Failed to parse file: " + e.getMessage()
             ));
         }
     }

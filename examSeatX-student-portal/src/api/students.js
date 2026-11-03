@@ -7,3 +7,4 @@ export const studentsApi = {
   // Basic student profile info
   getByRollNumber: (rollNumber) => api.get(`/students/roll/${rollNumber}`),
 }
+

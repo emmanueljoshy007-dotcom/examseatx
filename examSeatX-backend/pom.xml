@@ -62,6 +62,13 @@
             <version>5.9</version>
         </dependency>
 
+        <!-- Apache POI (for XLSX / XLS Excel student roster upload) -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+
         <!-- iTextPDF (for PDF seating chart generation) -->
         <dependency>
             <groupId>com.itextpdf</groupId>
