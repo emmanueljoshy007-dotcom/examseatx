@@ -20,7 +20,6 @@ public class Student {
     @NotBlank
     private String firstName;
 
-    @NotBlank
     private String lastName;
 
     @Email
@@ -144,6 +143,9 @@ public class Student {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public String getFullName() {
+        if (lastName == null || lastName.isBlank()) {
+            return firstName;
+        }
         return firstName + " " + lastName;
     }
 }
