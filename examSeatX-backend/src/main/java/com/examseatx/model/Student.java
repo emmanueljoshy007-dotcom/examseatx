@@ -35,6 +35,10 @@ public class Student {
 
     private String program;
 
+    private String subjectCode;
+
+    private String subjectName;
+
     private boolean active = true;
 
     @Column(updatable = false)
@@ -44,7 +48,7 @@ public class Student {
 
     public Student() {}
 
-    public Student(Long id, String rollNumber, String firstName, String lastName, String email, String department, Integer semester, String academicYear, String program, boolean active, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Student(Long id, String rollNumber, String firstName, String lastName, String email, String department, Integer semester, String academicYear, String program, String subjectCode, String subjectName, boolean active, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.rollNumber = rollNumber;
         this.firstName = firstName;
@@ -54,6 +58,8 @@ public class Student {
         this.semester = semester;
         this.academicYear = academicYear;
         this.program = program;
+        this.subjectCode = subjectCode;
+        this.subjectName = subjectName;
         this.active = active;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -73,6 +79,8 @@ public class Student {
         private Integer semester;
         private String academicYear;
         private String program;
+        private String subjectCode;
+        private String subjectName;
         private boolean active = true;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
@@ -86,12 +94,14 @@ public class Student {
         public StudentBuilder semester(Integer semester) { this.semester = semester; return this; }
         public StudentBuilder academicYear(String academicYear) { this.academicYear = academicYear; return this; }
         public StudentBuilder program(String program) { this.program = program; return this; }
+        public StudentBuilder subjectCode(String subjectCode) { this.subjectCode = subjectCode; return this; }
+        public StudentBuilder subjectName(String subjectName) { this.subjectName = subjectName; return this; }
         public StudentBuilder active(boolean active) { this.active = active; return this; }
         public StudentBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
         public StudentBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
         public Student build() {
-            return new Student(id, rollNumber, firstName, lastName, email, department, semester, academicYear, program, active, createdAt, updatedAt);
+            return new Student(id, rollNumber, firstName, lastName, email, department, semester, academicYear, program, subjectCode, subjectName, active, createdAt, updatedAt);
         }
     }
 
@@ -132,6 +142,12 @@ public class Student {
 
     public String getProgram() { return program; }
     public void setProgram(String program) { this.program = program; }
+
+    public String getSubjectCode() { return subjectCode; }
+    public void setSubjectCode(String subjectCode) { this.subjectCode = subjectCode; }
+
+    public String getSubjectName() { return subjectName; }
+    public void setSubjectName(String subjectName) { this.subjectName = subjectName; }
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }

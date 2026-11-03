@@ -66,7 +66,13 @@ public class AllocationEngineService {
 
         String getConflictKey() {
             if (assignedStudent == null) return null;
-            // Conflict group key: Department + "_" + Semester
+            if (assignedStudent.getSubjectCode() != null && !assignedStudent.getSubjectCode().isBlank()) {
+                return "SUBJ_" + assignedStudent.getSubjectCode().trim().toUpperCase();
+            }
+            if (assignedStudent.getSubjectName() != null && !assignedStudent.getSubjectName().isBlank()) {
+                return "SUBJ_" + assignedStudent.getSubjectName().trim().toUpperCase();
+            }
+            // Fallback conflict group key: Department + "_" + Semester
             return assignedStudent.getDepartment() + "_" + (assignedStudent.getSemester() != null ? assignedStudent.getSemester() : 0);
         }
     }
@@ -97,7 +103,14 @@ public class AllocationEngineService {
         // Students in the same group CANNOT sit next to each other
         Map<String, List<Student>> conflictGroups = new HashMap<>();
         for (Student s : students) {
-            String key = s.getDepartment() + "_" + (s.getSemester() != null ? s.getSemester() : 0);
+            String key;
+            if (s.getSubjectCode() != null && !s.getSubjectCode().isBlank()) {
+                key = "SUBJ_" + s.getSubjectCode().trim().toUpperCase();
+            } else if (s.getSubjectName() != null && !s.getSubjectName().isBlank()) {
+                key = "SUBJ_" + s.getSubjectName().trim().toUpperCase();
+            } else {
+                key = s.getDepartment() + "_" + (s.getSemester() != null ? s.getSemester() : 0);
+            }
             conflictGroups.computeIfAbsent(key, k -> new ArrayList<>()).add(s);
         }
 

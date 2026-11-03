@@ -50,14 +50,25 @@ public class SeatingService {
         // Auto-enroll eligible students if none explicitly enrolled yet
         if (exam.getEnrolledStudents() == null || exam.getEnrolledStudents().isEmpty()) {
             List<Student> eligibleStudents = new ArrayList<>();
-            if (exam.getDepartment() != null && !exam.getDepartment().isBlank() && !"All Departments".equalsIgnoreCase(exam.getDepartment())) {
-                if (exam.getSemester() != null) {
-                    eligibleStudents = studentRepository.findByDepartmentAndSemester(exam.getDepartment(), exam.getSemester());
-                }
-                if (eligibleStudents.isEmpty()) {
-                    eligibleStudents = studentRepository.findByDepartment(exam.getDepartment());
+            // First priority: Match by Subject Code or Subject Name (Elective support)
+            if (exam.getSubjectCode() != null && !exam.getSubjectCode().isBlank()) {
+                eligibleStudents = studentRepository.findBySubjectCodeIgnoreCase(exam.getSubjectCode().trim());
+            }
+            if (eligibleStudents.isEmpty() && exam.getSubjectName() != null && !exam.getSubjectName().isBlank()) {
+                eligibleStudents = studentRepository.findBySubjectNameIgnoreCase(exam.getSubjectName().trim());
+            }
+            // Second priority: Department and Semester
+            if (eligibleStudents.isEmpty()) {
+                if (exam.getDepartment() != null && !exam.getDepartment().isBlank() && !"All Departments".equalsIgnoreCase(exam.getDepartment())) {
+                    if (exam.getSemester() != null) {
+                        eligibleStudents = studentRepository.findByDepartmentAndSemester(exam.getDepartment(), exam.getSemester());
+                    }
+                    if (eligibleStudents.isEmpty()) {
+                        eligibleStudents = studentRepository.findByDepartment(exam.getDepartment());
+                    }
                 }
             }
+            // Fallback: All active students
             if (eligibleStudents.isEmpty()) {
                 eligibleStudents = studentRepository.findAll();
             }
@@ -177,12 +188,18 @@ public class SeatingService {
         for (SeatAssignment sa : assignments) {
             if (sa.getSeatingPlan() != null && sa.getSeatingPlan().isActive()) {
                 Exam exam = sa.getSeatingPlan().getExam();
+                String subjName = (sa.getStudent().getSubjectName() != null && !sa.getStudent().getSubjectName().isBlank())
+                        ? sa.getStudent().getSubjectName()
+                        : exam.getSubjectName();
+                String subjCode = (sa.getStudent().getSubjectCode() != null && !sa.getStudent().getSubjectCode().isBlank())
+                        ? sa.getStudent().getSubjectCode()
+                        : exam.getSubjectCode();
                 results.add(new StudentLookupDTO(
                         sa.getStudent().getRollNumber(),
                         sa.getStudent().getFullName(),
                         sa.getStudent().getDepartment(),
-                        exam.getSubjectName(),
-                        exam.getSubjectCode(),
+                        subjName,
+                        subjCode,
                         exam.getExamDate(),
                         exam.getStartTime(),
                         exam.getEndTime(),

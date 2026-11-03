@@ -34,6 +34,8 @@ function StudentsPage() {
     semester: '',
     academicYear: '2024-25',
     program: 'B.Tech',
+    subjectCode: '',
+    subjectName: '',
   })
 
   useEffect(() => {
@@ -65,6 +67,7 @@ function StudentsPage() {
       setFormData({
         rollNumber: '', firstName: '', lastName: '', email: '',
         department: '', semester: '', academicYear: '2024-25', program: 'B.Tech',
+        subjectCode: '', subjectName: '',
       })
       fetchStudents()
     } catch (err) {
@@ -100,11 +103,11 @@ function StudentsPage() {
 
   const downloadSampleCsv = () => {
     const csvContent =
-      "rollNumber,firstName,lastName,email,department,semester,academicYear,program\n" +
-      "CS2024011,Dev,Patel,dev.patel@student.edu,Computer Science,5,2024-25,B.Tech\n" +
-      "CS2024012,Riya,Shah,riya.shah@student.edu,Computer Science,5,2024-25,B.Tech\n" +
-      "EC2024011,Karan,Verma,karan.verma@student.edu,Electronics,5,2024-25,B.Tech\n" +
-      "EC2024012,Neha,Joshi,neha.joshi@student.edu,Electronics,5,2024-25,B.Tech\n"
+      "rollNumber,firstName,lastName,email,department,semester,academicYear,program,subjectCode,subjectName\n" +
+      "IT2024001,Alex,Johnson,alex@student.edu,Information Technology,7,2024-25,B.Tech,IT701,Cloud Computing\n" +
+      "IT2024002,Brian,Smith,brian@student.edu,Information Technology,7,2024-25,B.Tech,IT702,Cyber Security\n" +
+      "CS2024011,Dev,Patel,dev.patel@student.edu,Computer Science,5,2024-25,B.Tech,CS501,Database Management\n" +
+      "EC2024011,Karan,Verma,karan.verma@student.edu,Electronics,5,2024-25,B.Tech,EC501,Digital Signal Processing\n"
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -118,10 +121,12 @@ function StudentsPage() {
 
   // Filter students by search query
   const filteredStudents = students.filter(s =>
-    s.rollNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.department.toLowerCase().includes(searchQuery.toLowerCase())
+    s.rollNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.subjectCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.subjectName?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   if (loading) {
@@ -257,6 +262,26 @@ function StudentsPage() {
                 onChange={e => setFormData(p => ({ ...p, semester: e.target.value }))}
               />
             </div>
+            <div>
+              <label className="block text-slate-400 text-sm mb-1">Subject / Elective Name</label>
+              <input
+                type="text"
+                placeholder="e.g., Cloud Computing"
+                className="input-field"
+                value={formData.subjectName}
+                onChange={e => setFormData(p => ({ ...p, subjectName: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-slate-400 text-sm mb-1">Subject Code</label>
+              <input
+                type="text"
+                placeholder="e.g., IT701"
+                className="input-field font-mono"
+                value={formData.subjectCode}
+                onChange={e => setFormData(p => ({ ...p, subjectCode: e.target.value }))}
+              />
+            </div>
             <div className="col-span-2 flex gap-3 justify-end">
               <button
                 type="button"
@@ -308,7 +333,7 @@ function StudentsPage() {
                 <th className="text-left text-slate-400 text-xs font-medium uppercase tracking-wider px-6 py-3">Name</th>
                 <th className="text-left text-slate-400 text-xs font-medium uppercase tracking-wider px-6 py-3">Department</th>
                 <th className="text-left text-slate-400 text-xs font-medium uppercase tracking-wider px-6 py-3">Semester</th>
-                <th className="text-left text-slate-400 text-xs font-medium uppercase tracking-wider px-6 py-3">Program</th>
+                <th className="text-left text-slate-400 text-xs font-medium uppercase tracking-wider px-6 py-3">Subject / Elective</th>
                 <th className="text-right text-slate-400 text-xs font-medium uppercase tracking-wider px-6 py-3">Actions</th>
               </tr>
             </thead>
@@ -328,7 +353,15 @@ function StudentsPage() {
                   </td>
                   <td className="px-6 py-3 text-slate-400 text-sm">{student.department}</td>
                   <td className="px-6 py-3 text-slate-400 text-sm">Sem {student.semester}</td>
-                  <td className="px-6 py-3 text-slate-400 text-sm">{student.program}</td>
+                  <td className="px-6 py-3 text-slate-300 text-sm">
+                    {student.subjectName || student.subjectCode ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary-500/10 text-primary-400 text-xs font-mono">
+                        {student.subjectCode ? `[${student.subjectCode}] ` : ''}{student.subjectName || ''}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-xs">{student.program || 'Standard'}</span>
+                    )}
+                  </td>
                   <td className="px-6 py-3 text-right">
                     <button
                       onClick={() => handleDelete(student.id, `${student.firstName} ${student.lastName}`)}

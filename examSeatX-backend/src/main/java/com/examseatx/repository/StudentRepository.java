@@ -23,6 +23,10 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     List<Student> findByAcademicYear(String academicYear);
 
+    List<Student> findBySubjectCodeIgnoreCase(String subjectCode);
+
+    List<Student> findBySubjectNameIgnoreCase(String subjectName);
+
     // Custom JPQL query: find students by name (case-insensitive search)
     @Query("SELECT s FROM Student s WHERE LOWER(s.firstName) LIKE LOWER(CONCAT('%', :name, '%')) OR LOWER(s.lastName) LIKE LOWER(CONCAT('%', :name, '%'))")
     List<Student> findByNameContaining(String name);

@@ -67,6 +67,8 @@ public class StudentController {
             existing.setSemester(updated.getSemester());
             existing.setAcademicYear(updated.getAcademicYear());
             existing.setProgram(updated.getProgram());
+            existing.setSubjectCode(updated.getSubjectCode());
+            existing.setSubjectName(updated.getSubjectName());
             existing.setActive(updated.isActive());
             return ResponseEntity.ok(studentRepository.save(existing));
         }).orElse(ResponseEntity.notFound().build());
@@ -144,12 +146,53 @@ public class StudentController {
                 }
             }
 
-            for (String[] tokens : dataRows) {
+            int rollCol = 0, nameCol = 1, emailCol = -1, deptCol = -1, semCol = -1, acadCol = -1, progCol = -1, subjCodeCol = -1, subjNameCol = -1;
+            boolean hasHeader = false;
+
+            if (!dataRows.isEmpty()) {
+                String[] header = dataRows.get(0);
+                boolean matchesHeader = false;
+                for (int i = 0; i < header.length; i++) {
+                    String h = header[i].trim().toLowerCase().replaceAll("[^a-z0-9]", "");
+                    if (h.contains("roll") || h.contains("reg") || h.contains("studentid")) {
+                        rollCol = i;
+                        matchesHeader = true;
+                    } else if (h.equals("name") || h.contains("studentname") || h.equals("firstname")) {
+                        nameCol = i;
+                        matchesHeader = true;
+                    } else if (h.contains("mail")) {
+                        emailCol = i;
+                    } else if (h.contains("dept") || h.contains("branch") || h.contains("department")) {
+                        deptCol = i;
+                        matchesHeader = true;
+                    } else if (h.contains("sem")) {
+                        semCol = i;
+                    } else if (h.contains("year") || h.contains("batch")) {
+                        acadCol = i;
+                    } else if (h.contains("prog")) {
+                        progCol = i;
+                    } else if (h.contains("subcode") || h.contains("subjectcode") || h.contains("coursecode")) {
+                        subjCodeCol = i;
+                        matchesHeader = true;
+                    } else if (h.contains("subject") || h.contains("course") || h.contains("elective") || h.contains("paper")) {
+                        subjNameCol = i;
+                        matchesHeader = true;
+                    }
+                }
+                if (matchesHeader) {
+                    hasHeader = true;
+                }
+            }
+
+            int startIndex = hasHeader ? 1 : 0;
+            for (int r = startIndex; r < dataRows.size(); r++) {
+                String[] tokens = dataRows.get(r);
                 if (tokens.length == 0) continue;
-                String roll = tokens[0].trim();
+
+                String roll = (rollCol < tokens.length) ? tokens[rollCol].trim() : "";
                 if (roll.isEmpty()) continue;
 
-                // Skip header row if detected
+                // Skip header row if somehow repeated
                 String lowerRoll = roll.toLowerCase();
                 if (lowerRoll.contains("roll") || lowerRoll.contains("id") || lowerRoll.equals("rollnumber") || lowerRoll.equals("student_id")) {
                     continue;
@@ -168,47 +211,88 @@ public class StudentController {
                 Integer semester = 5;
                 String academicYear = "2024-25";
                 String program = "B.Tech";
+                String subjectCode = null;
+                String subjectName = null;
 
-                if (tokens.length >= 2 && !tokens[1].isBlank()) {
-                    String[] nameParts = tokens[1].trim().split("\\s+", 2);
-                    firstName = nameParts[0];
-                    if (nameParts.length > 1) lastName = nameParts[1];
-                }
-
-                if (tokens.length >= 3 && !tokens[2].isBlank()) {
-                    if (tokens[2].contains("@")) {
-                        email = tokens[2];
-                    } else if (lastName.isEmpty()) {
-                        lastName = tokens[2];
-                    } else {
-                        department = tokens[2];
+                if (hasHeader) {
+                    if (nameCol >= 0 && nameCol < tokens.length && !tokens[nameCol].isBlank()) {
+                        String[] nameParts = tokens[nameCol].trim().split("\\s+", 2);
+                        firstName = nameParts[0];
+                        if (nameParts.length > 1) lastName = nameParts[1];
+                    }
+                    if (emailCol >= 0 && emailCol < tokens.length && !tokens[emailCol].isBlank() && tokens[emailCol].contains("@")) {
+                        email = tokens[emailCol].trim();
+                    }
+                    if (deptCol >= 0 && deptCol < tokens.length && !tokens[deptCol].isBlank()) {
+                        department = tokens[deptCol].trim();
+                    }
+                    if (semCol >= 0 && semCol < tokens.length && !tokens[semCol].isBlank()) {
+                        try {
+                            semester = Integer.parseInt(tokens[semCol].replaceAll("[^0-9]", ""));
+                        } catch (Exception ignored) {}
+                    }
+                    if (acadCol >= 0 && acadCol < tokens.length && !tokens[acadCol].isBlank()) {
+                        academicYear = tokens[acadCol].trim();
+                    }
+                    if (progCol >= 0 && progCol < tokens.length && !tokens[progCol].isBlank()) {
+                        program = tokens[progCol].trim();
+                    }
+                    if (subjCodeCol >= 0 && subjCodeCol < tokens.length && !tokens[subjCodeCol].isBlank()) {
+                        subjectCode = tokens[subjCodeCol].trim();
+                    }
+                    if (subjNameCol >= 0 && subjNameCol < tokens.length && !tokens[subjNameCol].isBlank()) {
+                        subjectName = tokens[subjNameCol].trim();
+                    }
+                } else {
+                    // Positional fallback
+                    if (tokens.length >= 2 && !tokens[1].isBlank()) {
+                        String[] nameParts = tokens[1].trim().split("\\s+", 2);
+                        firstName = nameParts[0];
+                        if (nameParts.length > 1) lastName = nameParts[1];
+                    }
+                    if (tokens.length >= 3 && !tokens[2].isBlank()) {
+                        if (tokens[2].contains("@")) {
+                            email = tokens[2];
+                        } else if (lastName.isEmpty()) {
+                            lastName = tokens[2];
+                        } else {
+                            department = tokens[2];
+                        }
+                    }
+                    if (tokens.length >= 4 && !tokens[3].isBlank()) {
+                        if (tokens[3].contains("@")) {
+                            email = tokens[3];
+                        } else {
+                            department = tokens[3];
+                        }
+                    }
+                    if (tokens.length >= 5 && !tokens[4].isBlank()) {
+                        department = tokens[4];
+                    }
+                    if (tokens.length >= 6 && !tokens[5].isBlank()) {
+                        try {
+                            semester = Integer.parseInt(tokens[5].replaceAll("[^0-9]", ""));
+                        } catch (Exception ignored) {}
+                    }
+                    if (tokens.length >= 7 && !tokens[6].isBlank()) {
+                        academicYear = tokens[6];
+                    }
+                    if (tokens.length >= 8 && !tokens[7].isBlank()) {
+                        program = tokens[7];
+                    }
+                    if (tokens.length >= 9 && !tokens[8].isBlank()) {
+                        subjectCode = tokens[8].trim();
+                    }
+                    if (tokens.length >= 10 && !tokens[9].isBlank()) {
+                        subjectName = tokens[9].trim();
                     }
                 }
 
-                if (tokens.length >= 4 && !tokens[3].isBlank()) {
-                    if (tokens[3].contains("@")) {
-                        email = tokens[3];
-                    } else {
-                        department = tokens[3];
-                    }
-                }
-
-                if (tokens.length >= 5 && !tokens[4].isBlank()) {
-                    department = tokens[4];
-                }
-
-                if (tokens.length >= 6 && !tokens[5].isBlank()) {
-                    try {
-                        semester = Integer.parseInt(tokens[5].replaceAll("[^0-9]", ""));
-                    } catch (Exception ignored) {}
-                }
-
-                if (tokens.length >= 7 && !tokens[6].isBlank()) {
-                    academicYear = tokens[6];
-                }
-
-                if (tokens.length >= 8 && !tokens[7].isBlank()) {
-                    program = tokens[7];
+                // If subjectName was provided without subjectCode, or vice versa:
+                if (subjectCode != null && subjectName == null) {
+                    subjectName = subjectCode;
+                } else if (subjectName != null && subjectCode == null) {
+                    subjectCode = subjectName;
                 }
 
                 // Ensure unique email or set to null
@@ -225,6 +309,8 @@ public class StudentController {
                         .semester(semester)
                         .academicYear(academicYear)
                         .program(program)
+                        .subjectCode(subjectCode)
+                        .subjectName(subjectName)
                         .active(true)
                         .build());
             }
